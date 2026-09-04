@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raio de Sol Baby Kids — Painel Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Comfortaa:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --amarelo:#FFD243;
+    --rosa:#FFA4D5;
+    --azul:#6CB1D2;
+    --azul-claro:#8CD0E7;
+    --dourado-1:#F7E181;
+    --dourado-2:#BD8031;
+    --texto:#4a3b2a;
+    --texto-suave:#8a7a68;
+    --fundo:#FFFBF2;
+    --card:#ffffff;
+    --sombra:0 6px 20px rgba(189,128,49,.12);
+    --raio:20px;
+    --vermelho:#e0665c;
+    --verde:#5cae7a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--fundo); color:var(--texto);
+    font-family:'Comfortaa',system-ui,sans-serif;
+    padding-bottom:60px;
+  }
+  h1,h2,h3,.display{ font-family:'Baloo 2',system-ui,sans-serif; }
+  button{ font-family:'Comfortaa',sans-serif; cursor:pointer; }
+
+  /* ---------- Topo ---------- */
+  header{
+    background:linear-gradient(135deg,var(--amarelo),var(--dourado-1));
+    padding:18px 16px 40px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+  }
+  header::after{
+    content:"";
+    position:absolute; left:0; right:0; bottom:0; height:28px;
+    background:var(--fundo);
+    border-radius:50% 50% 0 0 / 100% 100% 0 0;
+  }
+  .logo{
+    font-family:'Baloo 2',sans-serif; font-weight:800; font-size:24px;
+    color:#7a4a12; letter-spacing:.5px; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .logo .sol{ font-size:28px; }
+  .subtitulo{ color:#8a5a1a; font-size:13px; margin-top:4px; font-weight:600; }
+
+  /* ---------- Login ---------- */
+  .tela-login{
+    max-width:340px; margin:60px auto; padding:0 16px; text-align:center;
+  }
+  .cartao-login{
+    background:var(--card); border-radius:var(--raio); box-shadow:var(--sombra); padding:28px 22px;
+  }
+  .cartao-login h2{ margin:0 0 4px; font-size:20px; color:var(--dourado-2); }
+  .cartao-login p{ font-size:13px; color:var(--texto-suave); margin:0 0 18px; }
+  .campo{ margin-bottom:14px; text-align:left; }
+  .campo label{ display:block; font-size:12px; font-weight:700; color:var(--texto-suave); margin-bottom:5px; }
+  .campo input, .campo select, .campo textarea{
+    width:100%; border:2px solid var(--azul-claro); border-radius:12px; padding:10px 12px;
+    font-family:'Comfortaa',sans-serif; font-size:14px; background:var(--fundo); color:var(--texto); outline:none;
+  }
+  .campo textarea{ resize:vertical; min-height:70px; }
+  .botao{
+    border:none; border-radius:12px; padding:11px 18px; font-family:'Baloo 2',sans-serif;
+    font-weight:700; font-size:15px; background:var(--azul); color:#fff; width:100%;
+  }
+  .botao.secundario{ background:var(--rosa); color:#7a2a4a; }
+  .botao.perigo{ background:var(--vermelho); color:#fff; }
+  .botao.pequeno{ width:auto; padding:7px 12px; font-size:13px; border-radius:10px; }
+  .erro-msg{ color:var(--vermelho); font-size:13px; margin-top:10px; min-height:18px; }
+
+  /* ---------- Painel principal ---------- */
+  .escondido{ display:none !important; }
+  .barra-topo{
+    max-width:1000px; margin:0 auto; padding:0 16px; display:flex; justify-content:space-between; align-items:center; gap:8px;
+  }
+  .abas{
+    max-width:1000px; margin:16px auto 10px; padding:0 16px; display:flex; gap:8px;
+  }
+  .aba{
+    border:none; background:var(--card); color:var(--texto); padding:9px 18px; border-radius:999px;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:14px; box-shadow:var(--sombra);
+  }
+  .aba.ativa{ background:var(--azul); color:#fff; }
+
+  .conteudo{ max-width:1000px; margin:0 auto; padding:0 16px; }
+
+  .acoes-topo{ display:flex; justify-content:flex-end; margin-bottom:12px; }
+
+  table{ width:100%; border-collapse:collapse; background:var(--card); border-radius:var(--raio); overflow:hidden; box-shadow:var(--sombra); }
+  thead th{ background:var(--dourado-1); color:#7a4a12; text-align:left; padding:10px 12px; font-size:12px; }
+  tbody td{ padding:10px 12px; font-size:13px; border-top:1px solid #f0e6d2; vertical-align:middle; }
+  tbody tr:hover{ background:#fffaf0; }
+  .badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; }
+  .badge.disponivel{ background:#e3f4e9; color:var(--verde); }
+  .badge.esgotado{ background:#fbe6e4; color:var(--vermelho); }
+  .linha-acoes{ display:flex; gap:6px; flex-wrap:wrap; }
+
+  .estado{ text-align:center; padding:50px 20px; color:var(--texto-suave); font-size:14px; }
+
+  /* ---------- Modal produto ---------- */
+  .fundo-modal{
+    position:fixed; inset:0; background:rgba(74,59,42,.45); z-index:70; display:none;
+    align-items:center; justify-content:center; padding:16px;
+  }
+  .fundo-modal.aberto{ display:flex; }
+  .modal{
+    background:var(--card); border-radius:var(--raio); padding:22px; width:100%; max-width:480px;
+    max-height:90vh; overflow-y:auto;
+  }
+  .modal h3{ margin:0 0 14px; color:var(--dourado-2); }
+  .grade-campos{ display:grid; grid-template-columns:1fr 1fr; gap:0 10px; }
+  .grade-campos .campo.larga{ grid-column:1 / -1; }
+  .modal-botoes{ display:flex; gap:10px; margin-top:8px; }
+
+  /* ---------- Pedidos ---------- */
+  .pedido-card{
+    background:var(--card); border-radius:var(--raio); box-shadow:var(--sombra); padding:14px 16px; margin-bottom:12px;
+  }
+  .pedido-topo{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; }
+  .pedido-codigo{ font-family:'Baloo 2',sans-serif; font-weight:800; color:var(--dourado-2); font-size:16px; }
+  .pedido-data{ font-size:12px; color:var(--texto-suave); }
+  .pedido-itens{ font-size:13px; margin:8px 0; color:var(--texto); }
+  .pedido-itens div{ padding:2px 0; }
+  .pedido-rodape{ display:flex; justify-content:space-between; align-items:center; font-size:13px; }
+  .pedido-total{ font-family:'Baloo 2',sans-serif; font-weight:800; color:var(--dourado-2); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="sol">☀️</span> Raio de Sol Baby Kids</div>
+  <div class="subtitulo">Painel Admin</div>
+</header>
+
+<!-- TELA DE LOGIN -->
+<div class="tela-login" id="telaLogin">
+  <div class="cartao-login">
+    <h2>Entrar</h2>
+    <p>Digite a senha do painel admin</p>
+    <div class="campo">
+      <label>Senha</label>
+      <input type="password" id="inputSenha" placeholder="••••••••">
+    </div>
+    <button class="botao" id="botaoEntrar">Entrar</button>
+    <div class="erro-msg" id="erroLogin"></div>
+  </div>
+</div>
+
+<!-- PAINEL PRINCIPAL -->
+<div id="painelPrincipal" class="escondido">
+  <div class="barra-topo">
+    <div></div>
+    <button class="botao secundario pequeno" id="botaoSair">Sair</button>
+  </div>
+
+  <div class="abas">
+    <button class="aba ativa" data-aba="produtos">Produtos</button>
+    <button class="aba" data-aba="pedidos">Pedidos</button>
+  </div>
+
+  <div class="conteudo">
+
+    <!-- ABA PRODUTOS -->
+    <div id="abaProdutos">
+      <div class="acoes-topo">
+        <button class="botao pequeno" id="botaoNovoProduto">+ Novo produto</button>
+      </div>
+      <div id="areaProdutos"><div class="estado">Carregando produtos...</div></div>
+    </div>
+
+    <!-- ABA PEDIDOS -->
+    <div id="abaPedidos" class="escondido">
+      <div id="areaPedidos"><div class="estado">Carregando pedidos...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL DE PRODUTO (criar/editar) -->
+<div class="fundo-modal" id="fundoModal">
+  <div class="modal">
+    <h3 id="tituloModal">Novo produto</h3>
+    <input type="hidden" id="produtoId">
+    <div class="grade-campos">
+      <div class="campo larga">
+        <label>Nome</label>
+        <input type="text" id="campoNome">
+      </div>
+      <div class="campo">
+        <label>Código</label>
+        <input type="text" id="campoCodigo">
+      </div>
+      <div class="campo">
+        <label>Categoria</label>
+        <input type="text" id="campoCategoria">
+      </div>
+      <div class="campo">
+        <label>Tamanho</label>
+        <input type="text" id="campoTamanho">
+      </div>
+      <div class="campo">
+        <label>Cor</label>
+        <input type="text" id="campoCor">
+      </div>
+      <div class="campo">
+        <label>Gênero</label>
+        <select id="campoGenero">
+          <option value="Menino">Menino</option>
+          <option value="Menina">Menina</option>
+          <option value="Unissex">Unissex</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Preço de venda (R$)</label>
+        <input type="number" step="0.01" id="campoPreco">
+      </div>
+      <div class="campo">
+        <label>Quantidade em estoque</label>
+        <input type="number" step="1" id="campoQuantidade">
+      </div>
+      <div class="campo larga">
+        <label>Descrição</label>
+        <textarea id="campoDescricao"></textarea>
+      </div>
+      <div class="campo larga">
+        <label>ID da imagem no Drive (opcional — a foto continua sendo tirada pelo app de cadastro)</label>
+        <input type="text" id="campoImagem" placeholder="ID do arquivo no Google Drive">
+      </div>
+    </div>
+    <div class="erro-msg" id="erroModal"></div>
+    <div class="modal-botoes">
+      <button class="botao secundario" id="botaoCancelarModal">Cancelar</button>
+      <button class="botao" id="botaoSalvarModal">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CONFIG = {
+  API_BASE: 'https://n8n.adaoserver.com.br/webhook',
+};
+
+let ADMIN_SENHA = '';
+let TODOS_PRODUTOS = [];
+
+const telaLogin = document.getElementById('telaLogin');
+const painelPrincipal = document.getElementById('painelPrincipal');
+const erroLogin = document.getElementById('erroLogin');
+
+function cabecalhosAdmin(extra){
+  return Object.assign({ 'x-admin-senha': ADMIN_SENHA }, extra || {});
+}
+
+async function fazerLogin(){
+  const senha = document.getElementById('inputSenha').value.trim();
+  erroLogin.textContent = '';
+  if(!senha){ erroLogin.textContent = 'Digite a senha.'; return; }
+  try{
+    const resp = await fetch(`${CONFIG.API_BASE}/admin-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senha })
+    });
+    const dados = await resp.json();
+    if(dados && dados.ok){
+      ADMIN_SENHA = senha;
+      telaLogin.classList.add('escondido');
+      painelPrincipal.classList.remove('escondido');
+      carregarProdutos();
+    } else {
+      erroLogin.textContent = 'Senha incorreta.';
+    }
+  } catch(e){
+    erroLogin.textContent = 'Não foi possível conectar. Tente novamente.';
+  }
+}
+
+document.getElementById('botaoEntrar').addEventListener('click', fazerLogin);
+document.getElementById('inputSenha').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') fazerLogin();
+});
+document.getElementById('botaoSair').addEventListener('click', () => {
+  ADMIN_SENHA = '';
+  painelPrincipal.classList.add('escondido');
+  telaLogin.classList.remove('escondido');
+  document.getElementById('inputSenha').value = '';
+});
+
+/* ---------- Abas ---------- */
+document.querySelectorAll('.aba').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.aba').forEach(b => b.classList.remove('ativa'));
+    btn.classList.add('ativa');
+    const aba = btn.dataset.aba;
+    document.getElementById('abaProdutos').classList.toggle('escondido', aba !== 'produtos');
+    document.getElementById('abaPedidos').classList.toggle('escondido', aba !== 'pedidos');
+    if(aba === 'pedidos') carregarPedidos();
+  });
+});
+
+/* ---------- Produtos ---------- */
+function formatarPreco(v){
+  return (Number(v)||0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+}
+
+async function carregarProdutos(){
+  const area = document.getElementById('areaProdutos');
+  area.innerHTML = '<div class="estado">Carregando produtos...</div>';
+  try{
+    const resp = await fetch(`${CONFIG.API_BASE}/admin-produtos`, { headers: cabecalhosAdmin() });
+    if(resp.status === 401){ return sessaoExpirada(); }
+    const dados = await resp.json();
+    TODOS_PRODUTOS = dados.produtos || [];
+    renderizarProdutos();
+  } catch(e){
+    area.innerHTML = '<div class="estado">Não foi possível carregar os produtos agora.</div>';
+  }
+}
+
+function renderizarProdutos(){
+  const area = document.getElementById('areaProdutos');
+  if(TODOS_PRODUTOS.length === 0){
+    area.innerHTML = '<div class="estado">Nenhum produto cadastrado ainda.</div>';
+    return;
+  }
+  let html = '<table><thead><tr><th>Nome</th><th>Tam./Cor</th><th>Preço</th><th>Qtd.</th><th>Status</th><th>Ações</th></tr></thead><tbody>';
+  TODOS_PRODUTOS.forEach(p => {
+    const esgotado = Number(p.quantidade) <= 0;
+    html += `<tr>
+      <td>${p.nome || ''}</td>
+      <td>${p.tamanho || ''} ${p.cor ? '· ' + p.cor : ''}</td>
+      <td>${formatarPreco(p.preco)}</td>
+      <td>${p.quantidade}</td>
+      <td><span class="badge ${esgotado ? 'esgotado' : 'disponivel'}">${esgotado ? 'Esgotado' : 'Disponível'}</span></td>
+      <td>
+        <div class="linha-acoes">
+          <button class="botao pequeno" data-editar="${p.id}">Editar</button>
+          <button class="botao secundario pequeno" data-toggle="${p.id}">${esgotado ? 'Disponível' : 'Esgotado'}</button>
+          <button class="botao perigo pequeno" data-excluir="${p.id}">Excluir</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  area.innerHTML = html;
+
+  area.querySelectorAll('[data-editar]').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalEdicao(btn.dataset.editar));
+  });
+  area.querySelectorAll('[data-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => alternarDisponibilidade(btn.dataset.toggle));
+  });
+  area.querySelectorAll('[data-excluir]').forEach(btn => {
+    btn.addEventListener('click', () => excluirProduto(btn.dataset.excluir));
+  });
+}
+
+async function alternarDisponibilidade(id){
+  const produto = TODOS_PRODUTOS.find(p => String(p.id) === String(id));
+  if(!produto) return;
+  const esgotado = Number(produto.quantidade) <= 0;
+  let novaQuantidade = 0;
+  if(esgotado){
+    const resposta = prompt('Quantas unidades chegaram no estoque?', '1');
+    if(resposta === null) return;
+    novaQuantidade = parseInt(resposta, 10);
+    if(isNaN(novaQuantidade) || novaQuantidade <= 0){ alert('Quantidade inválida.'); return; }
+  }
+  await salvarProduto(Object.assign({}, produto, { quantidade: novaQuantidade }));
+}
+
+async function excluirProduto(id){
+  const produto = TODOS_PRODUTOS.find(p => String(p.id) === String(id));
+  if(!produto) return;
+  if(!confirm(`Excluir "${produto.nome}"? Essa ação não pode ser desfeita.`)) return;
+  try{
+    const resp = await fetch(`${CONFIG.API_BASE}/admin-produto-excluir`, {
+      method: 'POST',
+      headers: cabecalhosAdmin({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ id })
+    });
+    if(resp.status === 401){ return sessaoExpirada(); }
+    if(!resp.ok){ alert('Não foi possível excluir agora.'); return; }
+    await carregarProdutos();
+  } catch(e){
+    alert('Não foi possível excluir agora.');
+  }
+}
+
+function abrirModalNovo(){
+  document.getElementById('tituloModal').textContent = 'Novo produto';
+  document.getElementById('produtoId').value = '';
+  ['campoNome','campoCodigo','campoCategoria','campoTamanho','campoCor','campoDescricao','campoImagem'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('campoGenero').value = 'Unissex';
+  document.getElementById('campoPreco').value = '';
+  document.getElementById('campoQuantidade').value = '1';
+  document.getElementById('erroModal').textContent = '';
+  document.getElementById('fundoModal').classList.add('aberto');
+}
+
+function abrirModalEdicao(id){
+  const p = TODOS_PRODUTOS.find(x => String(x.id) === String(id));
+  if(!p) return;
+  document.getElementById('tituloModal').textContent = 'Editar produto';
+  document.getElementById('produtoId').value = p.id;
+  document.getElementById('campoNome').value = p.nome || '';
+  document.getElementById('campoCodigo').value = p.codigo || '';
+  document.getElementById('campoCategoria').value = p.categoria || '';
+  document.getElementById('campoTamanho').value = p.tamanho || '';
+  document.getElementById('campoCor').value = p.cor || '';
+  document.getElementById('campoGenero').value = p.genero || 'Unissex';
+  document.getElementById('campoPreco').value = p.preco || '';
+  document.getElementById('campoQuantidade').value = p.quantidade || 0;
+  document.getElementById('campoDescricao').value = p.descricao || '';
+  document.getElementById('campoImagem').value = p.imagem || '';
+  document.getElementById('erroModal').textContent = '';
+  document.getElementById('fundoModal').classList.add('aberto');
+}
+
+function fecharModal(){
+  document.getElementById('fundoModal').classList.remove('aberto');
+}
+
+document.getElementById('botaoNovoProduto').addEventListener('click', abrirModalNovo);
+document.getElementById('botaoCancelarModal').addEventListener('click', fecharModal);
+document.getElementById('fundoModal').addEventListener('click', (e) => {
+  if(e.target.id === 'fundoModal') fecharModal();
+});
+
+document.getElementById('botaoSalvarModal').addEventListener('click', async () => {
+  const nome = document.getElementById('campoNome').value.trim();
+  if(!nome){ document.getElementById('erroModal').textContent = 'Informe o nome do produto.'; return; }
+  const produto = {
+    id: document.getElementById('produtoId').value || undefined,
+    nome,
+    codigo: document.getElementById('campoCodigo').value.trim(),
+    categoria: document.getElementById('campoCategoria').value.trim(),
+    tamanho: document.getElementById('campoTamanho').value.trim(),
+    cor: document.getElementById('campoCor').value.trim(),
+    genero: document.getElementById('campoGenero').value,
+    preco: parseFloat(document.getElementById('campoPreco').value) || 0,
+    quantidade: parseInt(document.getElementById('campoQuantidade').value, 10) || 0,
+    descricao: document.getElementById('campoDescricao').value.trim(),
+    imagem: document.getElementById('campoImagem').value.trim(),
+  };
+  const ok = await salvarProduto(produto);
+  if(ok) fecharModal();
+});
+
+async function salvarProduto(produto){
+  try{
+    const resp = await fetch(`${CONFIG.API_BASE}/admin-produto-salvar`, {
+      method: 'POST',
+      headers: cabecalhosAdmin({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(produto)
+    });
+    if(resp.status === 401){ sessaoExpirada(); return false; }
+    if(!resp.ok){ document.getElementById('erroModal').textContent = 'Não foi possível salvar agora.'; return false; }
+    await carregarProdutos();
+    return true;
+  } catch(e){
+    document.getElementById('erroModal').textContent = 'Não foi possível salvar agora.';
+    return false;
+  }
+}
+
+/* ---------- Pedidos ---------- */
+async function carregarPedidos(){
+  const area = document.getElementById('areaPedidos');
+  area.innerHTML = '<div class="estado">Carregando pedidos...</div>';
+  try{
+    const resp = await fetch(`${CONFIG.API_BASE}/admin-pedidos`, { headers: cabecalhosAdmin() });
+    if(resp.status === 401){ return sessaoExpirada(); }
+    const dados = await resp.json();
+    renderizarPedidos(dados.pedidos || []);
+  } catch(e){
+    area.innerHTML = '<div class="estado">Não foi possível carregar os pedidos agora.</div>';
+  }
+}
+
+function formatarData(iso){
+  try{
+    const d = new Date(iso);
+    return d.toLocaleString('pt-BR');
+  } catch(e){ return iso || ''; }
+}
+
+function renderizarPedidos(pedidos){
+  const area = document.getElementById('areaPedidos');
+  if(pedidos.length === 0){
+    area.innerHTML = '<div class="estado">Nenhum pedido registrado ainda.</div>';
+    return;
+  }
+  let html = '';
+  pedidos.forEach(ped => {
+    const itensHtml = (ped.itens || []).map(it =>
+      `<div>• ${it.nome || ''}${it.tamanho ? ' · ' + it.tamanho : ''}${it.cor ? ' · ' + it.cor : ''}</div>`
+    ).join('');
+    html += `<div class="pedido-card">
+      <div class="pedido-topo">
+        <div class="pedido-codigo">#${ped.codigo || ''}</div>
+        <div class="pedido-data">${formatarData(ped.dataHora)}</div>
+      </div>
+      <div class="pedido-itens">${itensHtml}</div>
+      <div class="pedido-rodape">
+        <span class="badge disponivel">${ped.status || 'aguardando'}</span>
+        <span class="pedido-total">${formatarPreco(ped.totalEstimado)}</span>
+      </div>
+    </div>`;
+  });
+  area.innerHTML = html;
+}
+
+function sessaoExpirada(){
+  alert('Sua sessão expirou ou a senha mudou. Entre novamente.');
+  ADMIN_SENHA = '';
+  painelPrincipal.classList.add('escondido');
+  telaLogin.classList.remove('escondido');
+}
+</script>
+</body>
+</html>
