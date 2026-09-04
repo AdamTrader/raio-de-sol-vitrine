@@ -231,7 +231,8 @@ async function carregarProdutos(){
     const resp = await fetch(`${CONFIG.API_BASE}/produtos-vitrine`);
     if(!resp.ok) throw new Error('Falha ao buscar produtos');
     const dados = await resp.json();
-    TODOS_PRODUTOS = dados.produtos || [];
+    // Mais recentes primeiro (a planilha devolve na ordem de cadastro, do mais antigo pro mais novo).
+    TODOS_PRODUTOS = (dados.produtos || []).slice().reverse();
     montarFiltros();
     renderizarProdutos();
   }catch(e){

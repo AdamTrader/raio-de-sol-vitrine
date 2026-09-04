@@ -253,7 +253,7 @@
         <div class="foto-area">
           <img class="preview-foto" id="previewFoto" src="" alt="Foto do produto" hidden>
           <div class="preview-foto-vazia" id="previewFotoVazio">Sem foto</div>
-          <input type="file" accept="image/*" capture="environment" id="campoFotoArquivo" hidden>
+          <input type="file" accept="image/*" id="campoFotoArquivo" hidden>
           <button type="button" class="botao secundario pequeno" id="botaoEscolherFoto">Tirar/escolher foto</button>
         </div>
       </div>
@@ -342,7 +342,8 @@ async function carregarProdutos(){
     const resp = await fetch(`${CONFIG.API_BASE}/admin-produtos`, { headers: cabecalhosAdmin() });
     if(resp.status === 401){ return sessaoExpirada(); }
     const dados = await resp.json();
-    TODOS_PRODUTOS = dados.produtos || [];
+    // Mais recentes primeiro (a planilha devolve na ordem de cadastro, do mais antigo pro mais novo).
+    TODOS_PRODUTOS = (dados.produtos || []).slice().reverse();
     renderizarProdutos();
     popularSelects();
   } catch(e){
