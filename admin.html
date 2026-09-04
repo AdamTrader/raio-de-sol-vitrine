@@ -134,6 +134,20 @@
   .pedido-itens div{ padding:2px 0; }
   .pedido-rodape{ display:flex; justify-content:space-between; align-items:center; font-size:13px; }
   .pedido-total{ font-family:'Baloo 2',sans-serif; font-weight:800; color:var(--dourado-2); }
+
+  /* ---------- Foto no modal ---------- */
+  .codigo-info{ font-size:12px; color:var(--texto-suave); margin:-8px 0 14px; }
+  .codigo-info b{ color:var(--texto); font-family:'IBM Plex Mono',monospace,'Comfortaa'; }
+  .foto-area{ display:flex; align-items:center; gap:12px; }
+  .preview-foto, .preview-foto-vazia{
+    width:72px; height:72px; border-radius:12px; flex:none;
+  }
+  .preview-foto{ object-fit:cover; border:2px solid var(--azul-claro); }
+  .preview-foto-vazia{
+    background:var(--fundo); border:2px dashed var(--azul-claro); color:var(--texto-suave);
+    font-size:10px; text-align:center; display:flex; align-items:center; justify-content:center; padding:4px;
+  }
+  .campo-select-novo{ margin-top:6px; }
 </style>
 </head>
 <body>
@@ -191,23 +205,24 @@
 <div class="fundo-modal" id="fundoModal">
   <div class="modal">
     <h3 id="tituloModal">Novo produto</h3>
+    <div class="codigo-info">Código: <b id="codigoAtual">gerado automaticamente ao salvar</b></div>
     <input type="hidden" id="produtoId">
+    <input type="hidden" id="produtoCodigo">
+    <input type="hidden" id="produtoImagemAtual">
     <div class="grade-campos">
       <div class="campo larga">
         <label>Nome</label>
         <input type="text" id="campoNome">
       </div>
       <div class="campo">
-        <label>Código</label>
-        <input type="text" id="campoCodigo">
-      </div>
-      <div class="campo">
         <label>Categoria</label>
-        <input type="text" id="campoCategoria">
+        <select id="campoCategoria"></select>
+        <input type="text" class="campo-select-novo escondido" id="campoCategoriaNova" placeholder="Nome da categoria nova">
       </div>
       <div class="campo">
         <label>Tamanho</label>
-        <input type="text" id="campoTamanho">
+        <select id="campoTamanho"></select>
+        <input type="text" class="campo-select-novo escondido" id="campoTamanhoNova" placeholder="Novo tamanho">
       </div>
       <div class="campo">
         <label>Cor</label>
@@ -234,8 +249,13 @@
         <textarea id="campoDescricao"></textarea>
       </div>
       <div class="campo larga">
-        <label>ID da imagem no Drive (opcional — a foto continua sendo tirada pelo app de cadastro)</label>
-        <input type="text" id="campoImagem" placeholder="ID do arquivo no Google Drive">
+        <label>Foto do produto</label>
+        <div class="foto-area">
+          <img class="preview-foto" id="previewFoto" src="" alt="Foto do produto" hidden>
+          <div class="preview-foto-vazia" id="previewFotoVazio">Sem foto</div>
+          <input type="file" accept="image/*" capture="environment" id="campoFotoArquivo" hidden>
+          <button type="button" class="botao secundario pequeno" id="botaoEscolherFoto">Tirar/escolher foto</button>
+        </div>
       </div>
     </div>
     <div class="erro-msg" id="erroModal"></div>
@@ -253,6 +273,7 @@ const CONFIG = {
 
 let ADMIN_SENHA = '';
 let TODOS_PRODUTOS = [];
+let FOTO_BASE64_NOVA = null;
 
 const telaLogin = document.getElementById('telaLogin');
 const painelPrincipal = document.getElementById('painelPrincipal');
@@ -323,8 +344,122 @@ async function carregarProdutos(){
     const dados = await resp.json();
     TODOS_PRODUTOS = dados.produtos || [];
     renderizarProdutos();
+    popularSelects();
   } catch(e){
     area.innerHTML = '<div class="estado">Não foi possível carregar os produtos agora.</div>';
+  }
+}
+
+/* ---------- Categoria / Tamanho (menus suspensos) ---------- */
+function popularSelects(){
+  const categorias = [...new Set(TODOS_PRODUTOS.map(p => p.categoria).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const tamanhos = [...new Set(TODOS_PRODUTOS.map(p => p.tamanho).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  preencherSelect('campoCategoria', categorias, '+ Nova categoria...');
+  preencherSelect('campoTamanho', tamanhos, '+ Novo tamanho...');
+}
+
+function preencherSelect(id, valores, textoNovo){
+  const select = document.getElementById(id);
+  const valorAtual = select.value;
+  select.innerHTML = '<option value="">Selecione...</option>' +
+    valores.map(v => `<option value="${v}">${v}</option>`).join('') +
+    `<option value="__novo__">${textoNovo}</option>`;
+  if(valorAtual) select.value = valorAtual;
+}
+
+function setSelectComValor(idSelect, valor){
+  const select = document.getElementById(idSelect);
+  const campoNovo = document.getElementById(idSelect + 'Nova');
+  const existe = Array.from(select.options).some(o => o.value === valor);
+  if(valor && existe){
+    select.value = valor;
+    campoNovo.classList.add('escondido');
+    campoNovo.value = '';
+  } else if(valor){
+    select.value = '__novo__';
+    campoNovo.classList.remove('escondido');
+    campoNovo.value = valor;
+  } else {
+    select.value = '';
+    campoNovo.classList.add('escondido');
+    campoNovo.value = '';
+  }
+}
+
+function valorSelecionado(idSelect){
+  const select = document.getElementById(idSelect);
+  if(select.value === '__novo__'){
+    return document.getElementById(idSelect + 'Nova').value.trim();
+  }
+  return select.value;
+}
+
+['campoCategoria', 'campoTamanho'].forEach(id => {
+  document.getElementById(id).addEventListener('change', function(){
+    document.getElementById(id + 'Nova').classList.toggle('escondido', this.value !== '__novo__');
+  });
+});
+
+/* ---------- Foto do produto ---------- */
+document.getElementById('botaoEscolherFoto').addEventListener('click', () => {
+  document.getElementById('campoFotoArquivo').click();
+});
+
+document.getElementById('campoFotoArquivo').addEventListener('change', async (e) => {
+  const arquivo = e.target.files[0];
+  if(!arquivo) return;
+  try{
+    const base64 = await comprimirImagem(arquivo);
+    FOTO_BASE64_NOVA = base64;
+    const preview = document.getElementById('previewFoto');
+    preview.src = base64;
+    preview.hidden = false;
+    document.getElementById('previewFotoVazio').hidden = true;
+  } catch(err){
+    alert('Não foi possível usar essa foto. Tente outra.');
+  }
+});
+
+function comprimirImagem(arquivo){
+  return new Promise((resolve, reject) => {
+    const leitor = new FileReader();
+    leitor.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1280;
+        let w = img.width, h = img.height;
+        if(w > MAX || h > MAX){
+          if(w > h){ h = Math.round(h * MAX / w); w = MAX; }
+          else{ w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.onerror = reject;
+      img.src = leitor.result;
+    };
+    leitor.onerror = reject;
+    leitor.readAsDataURL(arquivo);
+  });
+}
+
+function resetarFoto(urlExistente){
+  FOTO_BASE64_NOVA = null;
+  const preview = document.getElementById('previewFoto');
+  const vazio = document.getElementById('previewFotoVazio');
+  document.getElementById('campoFotoArquivo').value = '';
+  if(urlExistente){
+    preview.src = urlExistente;
+    preview.hidden = false;
+    vazio.hidden = true;
+  } else {
+    preview.src = '';
+    preview.hidden = true;
+    vazio.hidden = false;
   }
 }
 
@@ -401,13 +536,19 @@ async function excluirProduto(id){
 function abrirModalNovo(){
   document.getElementById('tituloModal').textContent = 'Novo produto';
   document.getElementById('produtoId').value = '';
-  ['campoNome','campoCodigo','campoCategoria','campoTamanho','campoCor','campoDescricao','campoImagem'].forEach(id => {
+  document.getElementById('produtoCodigo').value = '';
+  document.getElementById('produtoImagemAtual').value = '';
+  document.getElementById('codigoAtual').textContent = 'gerado automaticamente ao salvar';
+  ['campoNome','campoCor','campoDescricao'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  setSelectComValor('campoCategoria', '');
+  setSelectComValor('campoTamanho', '');
   document.getElementById('campoGenero').value = 'Unissex';
   document.getElementById('campoPreco').value = '';
   document.getElementById('campoQuantidade').value = '1';
   document.getElementById('erroModal').textContent = '';
+  resetarFoto(null);
   document.getElementById('fundoModal').classList.add('aberto');
 }
 
@@ -416,17 +557,19 @@ function abrirModalEdicao(id){
   if(!p) return;
   document.getElementById('tituloModal').textContent = 'Editar produto';
   document.getElementById('produtoId').value = p.id;
+  document.getElementById('produtoCodigo').value = p.codigo || '';
+  document.getElementById('produtoImagemAtual').value = p.imagem || '';
+  document.getElementById('codigoAtual').textContent = p.codigo || 'gerado automaticamente ao salvar';
   document.getElementById('campoNome').value = p.nome || '';
-  document.getElementById('campoCodigo').value = p.codigo || '';
-  document.getElementById('campoCategoria').value = p.categoria || '';
-  document.getElementById('campoTamanho').value = p.tamanho || '';
+  setSelectComValor('campoCategoria', p.categoria || '');
+  setSelectComValor('campoTamanho', p.tamanho || '');
   document.getElementById('campoCor').value = p.cor || '';
   document.getElementById('campoGenero').value = p.genero || 'Unissex';
   document.getElementById('campoPreco').value = p.preco || '';
   document.getElementById('campoQuantidade').value = p.quantidade || 0;
   document.getElementById('campoDescricao').value = p.descricao || '';
-  document.getElementById('campoImagem').value = p.imagem || '';
   document.getElementById('erroModal').textContent = '';
+  resetarFoto(p.imagemUrl || null);
   document.getElementById('fundoModal').classList.add('aberto');
 }
 
@@ -443,19 +586,23 @@ document.getElementById('fundoModal').addEventListener('click', (e) => {
 document.getElementById('botaoSalvarModal').addEventListener('click', async () => {
   const nome = document.getElementById('campoNome').value.trim();
   if(!nome){ document.getElementById('erroModal').textContent = 'Informe o nome do produto.'; return; }
+  const categoria = valorSelecionado('campoCategoria');
+  const tamanho = valorSelecionado('campoTamanho');
+  if(!categoria){ document.getElementById('erroModal').textContent = 'Escolha ou digite uma categoria.'; return; }
   const produto = {
     id: document.getElementById('produtoId').value || undefined,
+    codigo: document.getElementById('produtoCodigo').value || undefined,
     nome,
-    codigo: document.getElementById('campoCodigo').value.trim(),
-    categoria: document.getElementById('campoCategoria').value.trim(),
-    tamanho: document.getElementById('campoTamanho').value.trim(),
+    categoria,
+    tamanho,
     cor: document.getElementById('campoCor').value.trim(),
     genero: document.getElementById('campoGenero').value,
     preco: parseFloat(document.getElementById('campoPreco').value) || 0,
     quantidade: parseInt(document.getElementById('campoQuantidade').value, 10) || 0,
     descricao: document.getElementById('campoDescricao').value.trim(),
-    imagem: document.getElementById('campoImagem').value.trim(),
+    imagem: document.getElementById('produtoImagemAtual').value || '',
   };
+  if(FOTO_BASE64_NOVA){ produto.fotoBase64 = FOTO_BASE64_NOVA; }
   const ok = await salvarProduto(produto);
   if(ok) fecharModal();
 });

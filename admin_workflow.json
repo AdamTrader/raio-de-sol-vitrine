@@ -1,0 +1,1522 @@
+{
+  "name": "Raio de Sol Baby Kids - Painel Admin",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "admin-login",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "a67696c8-f1c3-4082-b3ed-08d7cdbd7555",
+      "name": "Webhook: login admin",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "notes": "URL publica: https://SEU-N8N/webhook/admin-login . Chamado pela tela de login do painel admin."
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nconst SENHA_ADMIN = 'TROQUE_ESTA_SENHA123';\nconst ok = (body.senha || '') === SENHA_ADMIN;\nreturn [{ json: { ok } }];\n"
+      },
+      "id": "67cb3489-0f91-4950-a73f-5e724d6f8888",
+      "name": "Verificar senha (login)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "notes": "Senha comparada aqui dentro do codigo (variavel SENHA_ADMIN = 'TROQUE_ESTA_SENHA123'). TROQUE esse valor por uma senha sua."
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "a49a50ce-f2dc-4a45-82b2-00eb9cd222a7",
+      "name": "Responder login",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "admin-produtos",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "227127d9-41d3-4d27-8791-cbeb87c47ebe",
+      "name": "Webhook: listar produtos admin",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "notes": "URL publica: https://SEU-N8N/webhook/admin-produtos . Precisa do header x-admin-senha com a senha do admin."
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst headers = $input.first().json.headers || {};\nconst senhaEnviada = headers['x-admin-senha'] || '';\nconst SENHA_ADMIN = 'TROQUE_ESTA_SENHA123';\nreturn [{ json: { autorizado: senhaEnviada === SENHA_ADMIN } }];\n"
+      },
+      "id": "3325ff7c-198d-4793-a468-aaf797155136",
+      "name": "Verificar senha (produtos)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        220,
+        300
+      ],
+      "notes": "Confere o header x-admin-senha. TROQUE a SENHA_ADMIN aqui tambem (mesma senha usada em todos os outros nos de verificacao)."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "0ec493f6-5241-4d31-9888-c57d53094c9f",
+              "leftValue": "={{ $json.autorizado }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "423108e7-fbd5-437d-a2ab-1351cdfd30aa",
+      "name": "Autorizado? (produtos)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1sfWVQ5mjcg1_GABVkHQNd1GuH-RPwJGejhblp3stGwI"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Produtos"
+        },
+        "options": {}
+      },
+      "id": "a26ddb49-008c-42ee-be70-66cfd624c637",
+      "name": "Buscar todos produtos (Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        660,
+        220
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "SHEETS_CRED",
+          "name": "Google Sheets - Raio de Sol"
+        }
+      },
+      "notes": "Reselecione a aba 'Produtos' no dropdown apos importar (o valor pre-preenchido nem sempre 'gruda' sozinho)."
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\n\nconst produtos = rows.map(r => ({\n  id: r['ID'],\n  codigo: r['Código'],\n  nome: r['Nome'],\n  categoria: r['Categoria'],\n  tamanho: r['Tamanho'],\n  cor: r['Cor'],\n  genero: r['Gênero'],\n  preco: Number(String(r['Preço Venda'] || '0').replace(',', '.')) || 0,\n  descricao: r['Descrição'] || '',\n  quantidade: Number(r['Quantidade']) || 0,\n  imagem: r['Imagem'] || '',\n  imagemUrl: r['Imagem'] ? `https://drive.google.com/thumbnail?id=${r['Imagem']}&sz=w1000` : ''\n}));\n\nreturn [{ json: { produtos } }];\n"
+      },
+      "id": "f7a420c6-2265-41cb-9bef-ae9d1dff6b90",
+      "name": "Formatar produtos admin",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        880,
+        220
+      ],
+      "notes": "Ao contrario da vitrine publica, aqui aparecem TODOS os produtos (inclusive com Quantidade = 0), para o admin poder editar/reativar."
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "5918e36d-dd6a-443a-861b-da54c50fc69c",
+      "name": "Responder produtos admin",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1100,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { erro: 'Senha invalida' } }];"
+      },
+      "id": "df060c31-a8f0-456a-9c66-230ec414d6cb",
+      "name": "Erro senha (produtos)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        660,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "responseCode": 401,
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "0e3e84d4-1988-490e-b97f-475c1a4b2c54",
+      "name": "Responder erro 401 (produtos)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        880,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "admin-produto-salvar",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "7eae5dcc-c321-4a49-a891-6398b04f8007",
+      "name": "Webhook: salvar produto",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        600
+      ],
+      "notes": "URL publica: https://SEU-N8N/webhook/admin-produto-salvar . Precisa do header x-admin-senha. Se o corpo tiver 'id', edita; se nao tiver, cria um produto novo. Se tiver 'fotoBase64', sobe uma foto nova pro Drive."
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst body = $input.first().json.body || {};\nconst SENHA_ADMIN = 'TROQUE_ESTA_SENHA123';\nconst autorizado = (headers['x-admin-senha'] || '') === SENHA_ADMIN;\nreturn [{ json: { autorizado, body } }];\n"
+      },
+      "id": "297cce2d-4019-463d-a9c6-3e8867574c47",
+      "name": "Verificar senha (salvar)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        220,
+        600
+      ],
+      "notes": "TROQUE a SENHA_ADMIN aqui (mesma senha dos outros nos)."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "9db3d2ce-0be5-4e14-8347-9f7938124d66",
+              "leftValue": "={{ $json.autorizado }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "99a2ddcf-645a-4cb4-afc7-502ff4a44148",
+      "name": "Autorizado? (salvar)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1sfWVQ5mjcg1_GABVkHQNd1GuH-RPwJGejhblp3stGwI"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Produtos"
+        },
+        "options": {}
+      },
+      "id": "a4612530-2156-4f10-be7d-6a8ca9352005",
+      "name": "Buscar produtos para gerar codigo (Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        660,
+        480
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "SHEETS_CRED",
+          "name": "Google Sheets - Raio de Sol"
+        }
+      },
+      "notes": "Reselecione a aba 'Produtos'. So serve pra descobrir qual o proximo numero de Código sequencial (RS0001, RS0002...) — roda em toda gravacao, mas so o resultado e usado quando o produto e novo."
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nconst dados = $('Verificar senha (salvar)').item.json.body || {};\n\nlet maiorNumero = 0;\nrows.forEach(r => {\n  const m = String(r['Código'] || '').match(/^RS(\\d+)$/i);\n  if (m) maiorNumero = Math.max(maiorNumero, parseInt(m[1], 10));\n});\nconst proximoCodigo = 'RS' + String(maiorNumero + 1).padStart(4, '0');\n\nfunction gerarId() {\n  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';\n  let s = '';\n  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];\n  return 'N-' + s;\n}\n\nconst isEdicao = !!dados.id;\nconst id = dados.id || gerarId();\nconst codigo = isEdicao ? (dados.codigo || '') : proximoCodigo;\n\nreturn [{ json: {\n  ID: id,\n  'Código': codigo,\n  Nome: dados.nome || '',\n  Categoria: dados.categoria || '',\n  Tamanho: dados.tamanho || '',\n  Cor: dados.cor || '',\n  'Gênero': dados.genero || '',\n  'Preço Venda': dados.preco || 0,\n  Quantidade: dados.quantidade || 0,\n  'Descrição': dados.descricao || '',\n  Imagem: dados.imagem || '',\n  _fotoBase64: dados.fotoBase64 || ''\n} }];\n"
+      },
+      "id": "929ef529-fdea-432c-a099-2ffd61e1dc1e",
+      "name": "Gerar codigo e preparar produto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        880,
+        480
+      ],
+      "notes": "Calcula o próximo Código sequencial (só é usado quando o produto é novo; ao editar, mantém o código que já existia). Gera o ID novo no formato N-XXXXXX quando não veio 'id' no corpo."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "86a085df-3779-4b42-9496-d18be90dde86",
+              "leftValue": "={{ $json._fotoBase64 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4ec012e7-b591-4524-85d3-12674eb65c20",
+      "name": "Tem foto nova?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst base64Limpo = String(item._fotoBase64 || '').replace(/^data:image\\/\\w+;base64,/, '');\n\nreturn [{\n  json: item,\n  binary: {\n    foto: {\n      data: base64Limpo,\n      mimeType: 'image/jpeg',\n      fileName: `${item.ID}.jpg`\n    }\n  }\n}];\n"
+      },
+      "id": "b70fd862-4f0d-49b7-8cbc-c0155ebf53ec",
+      "name": "Preparar binario da foto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        380
+      ],
+      "notes": "Transforma o texto base64 mandado pelo admin.html em um arquivo binario, pronto pra subir no Drive."
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "name": "={{ $json.ID }}.jpg",
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "COLOQUE_AQUI_O_ID_DA_PASTA_DO_DRIVE"
+        },
+        "binaryDataUpload": true,
+        "binaryPropertyName": "foto",
+        "options": {}
+      },
+      "id": "1e5d1104-cb83-4c43-9952-7865440cbb22",
+      "name": "Enviar foto (Drive)",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1540,
+        380
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DRIVE_CRED",
+          "name": "Google Drive - Raio de Sol"
+        }
+      },
+      "notes": "TROQUE o ID da pasta (campo 'folderId') pela pasta certa do Drive — o valor pré-preenchido é so um placeholder: COLOQUE_AQUI_O_ID_DA_PASTA_DO_DRIVE. Selecione tambem a credencial do Google Drive apos importar."
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "reader",
+            "type": "anyone"
+          }
+        },
+        "options": {}
+      },
+      "id": "71ad697a-98a2-4d26-ab50-836273143c0f",
+      "name": "Compartilhar foto (Drive)",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1760,
+        380
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DRIVE_CRED",
+          "name": "Google Drive - Raio de Sol"
+        }
+      },
+      "notes": "Deixa a foto como 'qualquer pessoa com o link pode ver', igual as fotos que ja sao cadastradas pelo app atual — necessario pra imagem aparecer na vitrine sem precisar de login."
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $('Gerar codigo e preparar produto').item.json;\nconst arquivo = $('Enviar foto (Drive)').item.json;\nreturn [{ json: Object.assign({}, p, { Imagem: arquivo.id }) }];\n"
+      },
+      "id": "1d22bd0c-02e6-4963-a8a9-040c6224c286",
+      "name": "Montar produto com foto nova",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1980,
+        380
+      ],
+      "notes": "Junta os dados do produto com o ID do arquivo que acabou de subir no Drive."
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: $json }];"
+      },
+      "id": "81a5c474-dfad-4495-bfc3-9f21010f621d",
+      "name": "Montar produto sem foto nova",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        600
+      ],
+      "notes": "Nao veio foto nova nessa gravacao — segue com o Imagem que ja estava salvo (ou vazio, se o produto ainda nao tem foto)."
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1sfWVQ5mjcg1_GABVkHQNd1GuH-RPwJGejhblp3stGwI"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Produtos"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "ID"
+          ],
+          "value": {
+            "ID": "={{ $json.ID }}",
+            "Código": "={{ $json['Código'] }}",
+            "Nome": "={{ $json.Nome }}",
+            "Categoria": "={{ $json.Categoria }}",
+            "Tamanho": "={{ $json.Tamanho }}",
+            "Cor": "={{ $json.Cor }}",
+            "Gênero": "={{ $json['Gênero'] }}",
+            "Preço Venda": "={{ $json['Preço Venda'] }}",
+            "Quantidade": "={{ $json.Quantidade }}",
+            "Descrição": "={{ $json['Descrição'] }}",
+            "Imagem": "={{ $json.Imagem }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "c937706f-9d51-49e5-a1ff-0c5dff7650c0",
+      "name": "Salvar produto (Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2200,
+        480
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "SHEETS_CRED",
+          "name": "Google Sheets - Raio de Sol"
+        }
+      },
+      "notes": "Operacao 'Append or Update Row' (cria se o ID nao existir, atualiza se existir), casando pela coluna ID. Reselecione a aba 'Produtos' no dropdown e confira se a Operacao aparece como 'Append or Update Row' apos importar — se o n8n resetar para outra operacao, selecione manualmente. Recebe os dois caminhos (com foto nova e sem foto nova)."
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ok: true, id: $json['ID'], codigo: $json['Código'] } }];"
+      },
+      "id": "1c903c3c-432e-459f-921a-96e27b8bb9b4",
+      "name": "Responder produto salvo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        2420,
+        480
+      ],
+      "notes": "Confirma pro admin.html que salvou, devolvendo o ID e o Código (util quando e um produto novo)."
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "19fe6bcd-ff50-4cb1-8c13-8e7c713bffca",
+      "name": "Responder sucesso (salvar)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2640,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { erro: 'Senha invalida' } }];"
+      },
+      "id": "9f4d1625-5ccd-45e2-9a9f-38d33c225922",
+      "name": "Erro senha (salvar)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        660,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "responseCode": 401,
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "3dcc17eb-e06a-4d38-9818-41d9dea8e94e",
+      "name": "Responder erro 401 (salvar)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        880,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "admin-produto-excluir",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "8be6298a-0822-4aef-9f97-83c6dd999efd",
+      "name": "Webhook: excluir produto",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        940
+      ],
+      "notes": "URL publica: https://SEU-N8N/webhook/admin-produto-excluir . Corpo esperado: { \"id\": \"...\" }. Precisa do header x-admin-senha."
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst body = $input.first().json.body || {};\nconst SENHA_ADMIN = 'TROQUE_ESTA_SENHA123';\nconst autorizado = (headers['x-admin-senha'] || '') === SENHA_ADMIN;\nreturn [{ json: { autorizado, id: body.id || '' } }];\n"
+      },
+      "id": "8ae7c012-64c0-4404-b57d-d292a5772570",
+      "name": "Verificar senha (excluir)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        220,
+        940
+      ],
+      "notes": "TROQUE a SENHA_ADMIN aqui tambem."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "db82ce86-c900-45bd-9877-b6b7b9bc1756",
+              "leftValue": "={{ $json.autorizado }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "23ad599b-b67f-4eeb-93af-980402fb8440",
+      "name": "Autorizado? (excluir)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        940
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1sfWVQ5mjcg1_GABVkHQNd1GuH-RPwJGejhblp3stGwI"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Produtos"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID",
+              "lookupValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d48a6f89-c14f-4ae6-9e49-b01bf4d6d5c3",
+      "name": "Buscar linha do produto (Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        660,
+        860
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "SHEETS_CRED",
+          "name": "Google Sheets - Raio de Sol"
+        }
+      },
+      "notes": "Reselecione a aba 'Produtos'. Se o filtro nao vier pre-preenchido apos importar, configure manualmente: Column = ID, Value = expressao {{ $json.id }}. Esse passo serve so pra descobrir o numero da linha (row_number) que sera excluida."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "57f17d26-a1a6-4319-a2c0-d9254fae291d",
+              "leftValue": "={{ $json.row_number }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0f82af05-e2cd-4707-943a-2d9f8c61a6b7",
+      "name": "Encontrado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        880,
+        860
+      ],
+      "notes": "O campo row_number e adicionado automaticamente pelo n8n quando le linhas da planilha."
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "delete",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1sfWVQ5mjcg1_GABVkHQNd1GuH-RPwJGejhblp3stGwI"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Produtos"
+        },
+        "startIndex": "={{ $json.row_number - 1 }}",
+        "numberToDelete": 1,
+        "options": {}
+      },
+      "id": "2fb196ef-64ff-4739-b5b3-93b305287fd4",
+      "name": "Excluir produto (Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1100,
+        780
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "SHEETS_CRED",
+          "name": "Google Sheets - Raio de Sol"
+        }
+      },
+      "notes": "Reselecione a aba 'Produtos' apos importar. Se o campo de linha inicial tiver outro nome no seu n8n (ex: 'Start Index'), aponte pra {{ $json.row_number - 1 }} do mesmo jeito (a planilha comeca em 0 aqui, mas row_number vem contando a partir de 1)."
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ok: true } }];"
+      },
+      "id": "a64a833c-51c4-488c-b428-ec17579765f8",
+      "name": "Responder exclusao ok",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        780
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c4d0a046-0584-4d00-80b7-85e071a904ed",
+      "name": "Responder sucesso (excluir)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1540,
+        780
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { erro: 'Produto nao encontrado' } }];"
+      },
+      "id": "cbc211f0-3494-4b2e-b970-6ed3179772d9",
+      "name": "Erro nao encontrado (excluir)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        940
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "responseCode": 404,
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "b77cc964-b21b-49b9-a5b1-484918fbadee",
+      "name": "Responder erro 404 (excluir)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1320,
+        940
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { erro: 'Senha invalida' } }];"
+      },
+      "id": "b4d80b9c-f0fd-4390-ae9c-7e68692067f1",
+      "name": "Erro senha (excluir)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        660,
+        1060
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "responseCode": 401,
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "5c961a1c-adb1-4f1b-87b6-d4f9d126e89a",
+      "name": "Responder erro 401 (excluir)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        880,
+        1060
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "admin-pedidos",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "d4771f04-1f35-4bd0-b198-14948c266958",
+      "name": "Webhook: listar pedidos",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1300
+      ],
+      "notes": "URL publica: https://SEU-N8N/webhook/admin-pedidos . Precisa do header x-admin-senha."
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst headers = $input.first().json.headers || {};\nconst senhaEnviada = headers['x-admin-senha'] || '';\nconst SENHA_ADMIN = 'TROQUE_ESTA_SENHA123';\nreturn [{ json: { autorizado: senhaEnviada === SENHA_ADMIN } }];\n"
+      },
+      "id": "0da5fbb7-e13e-43d9-8810-3f870f4179fe",
+      "name": "Verificar senha (pedidos)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        220,
+        1300
+      ],
+      "notes": "TROQUE a SENHA_ADMIN aqui tambem."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "9d4ecc54-5c25-437b-a698-abf3fe822a36",
+              "leftValue": "={{ $json.autorizado }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "181ac0bf-d518-4e41-b128-4f5e890399c9",
+      "name": "Autorizado? (pedidos)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        1300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1sfWVQ5mjcg1_GABVkHQNd1GuH-RPwJGejhblp3stGwI"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Carrinhos"
+        },
+        "options": {}
+      },
+      "id": "63ce2805-f28e-4c36-9e8e-9186b58e5fb8",
+      "name": "Buscar pedidos (Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        660,
+        1220
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "SHEETS_CRED",
+          "name": "Google Sheets - Raio de Sol"
+        }
+      },
+      "notes": "Reselecione a aba 'Carrinhos' no dropdown apos importar."
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\n\nfunction tentarParsear(txt) {\n  try { return JSON.parse(txt); } catch (e) { return []; }\n}\n\nconst pedidos = rows.map(r => ({\n  codigo: r['Código Pedido'],\n  dataHora: r['Data/Hora'],\n  itens: tentarParsear(r['Itens (JSON)']),\n  totalEstimado: Number(r['Total Estimado']) || 0,\n  qtdItens: Number(r['Qtd Itens']) || 0,\n  status: r['Status'] || 'aguardando',\n  telefone: r['Telefone Cliente'] || ''\n})).sort((a, b) => String(b.dataHora).localeCompare(String(a.dataHora)));\n\nreturn [{ json: { pedidos } }];\n"
+      },
+      "id": "550852ed-8b19-4fab-8b0d-1f42da22f0aa",
+      "name": "Formatar pedidos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        880,
+        1220
+      ],
+      "notes": "Ordena do pedido mais recente pro mais antigo."
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c47a9cb4-659f-48ad-9674-736a7a92e8f9",
+      "name": "Responder pedidos",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1100,
+        1220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { erro: 'Senha invalida' } }];"
+      },
+      "id": "c2cacaa6-b944-4677-a717-407b12e24c70",
+      "name": "Erro senha (pedidos)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        660,
+        1400
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "responseCode": 401,
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "e09728de-89e2-43d3-ae3e-e730ec4c389b",
+      "name": "Responder erro 401 (pedidos)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        880,
+        1400
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: login admin": {
+      "main": [
+        [
+          {
+            "node": "Verificar senha (login)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar senha (login)": {
+      "main": [
+        [
+          {
+            "node": "Responder login",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: listar produtos admin": {
+      "main": [
+        [
+          {
+            "node": "Verificar senha (produtos)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar senha (produtos)": {
+      "main": [
+        [
+          {
+            "node": "Autorizado? (produtos)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Autorizado? (produtos)": {
+      "main": [
+        [
+          {
+            "node": "Buscar todos produtos (Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Erro senha (produtos)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar todos produtos (Sheets)": {
+      "main": [
+        [
+          {
+            "node": "Formatar produtos admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar produtos admin": {
+      "main": [
+        [
+          {
+            "node": "Responder produtos admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Erro senha (produtos)": {
+      "main": [
+        [
+          {
+            "node": "Responder erro 401 (produtos)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: salvar produto": {
+      "main": [
+        [
+          {
+            "node": "Verificar senha (salvar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar senha (salvar)": {
+      "main": [
+        [
+          {
+            "node": "Autorizado? (salvar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Autorizado? (salvar)": {
+      "main": [
+        [
+          {
+            "node": "Buscar produtos para gerar codigo (Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Erro senha (salvar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar produtos para gerar codigo (Sheets)": {
+      "main": [
+        [
+          {
+            "node": "Gerar codigo e preparar produto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar codigo e preparar produto": {
+      "main": [
+        [
+          {
+            "node": "Tem foto nova?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem foto nova?": {
+      "main": [
+        [
+          {
+            "node": "Preparar binario da foto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Montar produto sem foto nova",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar binario da foto": {
+      "main": [
+        [
+          {
+            "node": "Enviar foto (Drive)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar foto (Drive)": {
+      "main": [
+        [
+          {
+            "node": "Compartilhar foto (Drive)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compartilhar foto (Drive)": {
+      "main": [
+        [
+          {
+            "node": "Montar produto com foto nova",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar produto com foto nova": {
+      "main": [
+        [
+          {
+            "node": "Salvar produto (Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar produto sem foto nova": {
+      "main": [
+        [
+          {
+            "node": "Salvar produto (Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar produto (Sheets)": {
+      "main": [
+        [
+          {
+            "node": "Responder produto salvo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder produto salvo": {
+      "main": [
+        [
+          {
+            "node": "Responder sucesso (salvar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Erro senha (salvar)": {
+      "main": [
+        [
+          {
+            "node": "Responder erro 401 (salvar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: excluir produto": {
+      "main": [
+        [
+          {
+            "node": "Verificar senha (excluir)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar senha (excluir)": {
+      "main": [
+        [
+          {
+            "node": "Autorizado? (excluir)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Autorizado? (excluir)": {
+      "main": [
+        [
+          {
+            "node": "Buscar linha do produto (Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Erro senha (excluir)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar linha do produto (Sheets)": {
+      "main": [
+        [
+          {
+            "node": "Encontrado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encontrado?": {
+      "main": [
+        [
+          {
+            "node": "Excluir produto (Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Erro nao encontrado (excluir)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Excluir produto (Sheets)": {
+      "main": [
+        [
+          {
+            "node": "Responder exclusao ok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder exclusao ok": {
+      "main": [
+        [
+          {
+            "node": "Responder sucesso (excluir)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Erro nao encontrado (excluir)": {
+      "main": [
+        [
+          {
+            "node": "Responder erro 404 (excluir)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Erro senha (excluir)": {
+      "main": [
+        [
+          {
+            "node": "Responder erro 401 (excluir)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: listar pedidos": {
+      "main": [
+        [
+          {
+            "node": "Verificar senha (pedidos)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar senha (pedidos)": {
+      "main": [
+        [
+          {
+            "node": "Autorizado? (pedidos)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Autorizado? (pedidos)": {
+      "main": [
+        [
+          {
+            "node": "Buscar pedidos (Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Erro senha (pedidos)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar pedidos (Sheets)": {
+      "main": [
+        [
+          {
+            "node": "Formatar pedidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar pedidos": {
+      "main": [
+        [
+          {
+            "node": "Responder pedidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Erro senha (pedidos)": {
+      "main": [
+        [
+          {
+            "node": "Responder erro 401 (pedidos)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
