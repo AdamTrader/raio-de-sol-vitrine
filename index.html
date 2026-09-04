@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raio de Sol Baby Kids — Vitrine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Comfortaa:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* =====================================================================
+     IDENTIDADE VISUAL — cores extraidas do manual de marca (RAIO DE SOL Vetores.pdf)
+     ===================================================================== */
+  :root{
+    --amarelo:#FFD243;
+    --rosa:#FFA4D5;
+    --azul:#6CB1D2;
+    --azul-claro:#8CD0E7;
+    --dourado-1:#F7E181;
+    --dourado-2:#BD8031;
+    --texto:#4a3b2a;
+    --texto-suave:#8a7a68;
+    --fundo:#FFFBF2;
+    --card:#ffffff;
+    --sombra:0 6px 20px rgba(189,128,49,.12);
+    --raio:20px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--fundo); color:var(--texto);
+    font-family:'Comfortaa',system-ui,sans-serif;
+    padding-bottom:90px;
+  }
+  h1,h2,h3,.display{ font-family:'Baloo 2',system-ui,sans-serif; }
+
+  /* ---------- Topo ---------- */
+  header{
+    background:linear-gradient(135deg,var(--amarelo),var(--dourado-1));
+    padding:22px 16px 60px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+  }
+  header::after{
+    content:"";
+    position:absolute; left:0; right:0; bottom:0; height:40px;
+    background:var(--fundo);
+    border-radius:50% 50% 0 0 / 100% 100% 0 0;
+  }
+  .logo{
+    font-family:'Baloo 2',sans-serif; font-weight:800; font-size:28px;
+    color:#7a4a12; letter-spacing:.5px; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .logo .sol{ font-size:32px; }
+  .subtitulo{ color:#8a5a1a; font-size:14px; margin-top:4px; font-weight:600; }
+
+  /* ---------- Filtros ---------- */
+  .filtros{
+    max-width:1100px; margin:-34px auto 18px; padding:0 16px;
+    position:relative; z-index:2;
+    display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
+  }
+  .filtros select, .filtros input{
+    border:2px solid var(--azul-claro); border-radius:14px; padding:10px 14px;
+    font-family:'Comfortaa',sans-serif; font-size:14px; background:var(--card); color:var(--texto);
+    outline:none;
+  }
+  .filtros input{ flex:1 1 220px; }
+  .chips{ max-width:1100px; margin:0 auto 18px; padding:0 16px; display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+  .chip{
+    border:none; background:var(--card); color:var(--texto); padding:8px 16px; border-radius:999px;
+    font-family:'Comfortaa',sans-serif; font-weight:700; font-size:13px; cursor:pointer;
+    box-shadow:var(--sombra); transition:.15s;
+  }
+  .chip.ativo{ background:var(--rosa); color:#7a2a4a; }
+
+  /* ---------- Grid de produtos ---------- */
+  .grid{
+    max-width:1100px; margin:0 auto; padding:0 16px;
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:16px;
+  }
+  .card{
+    background:var(--card); border-radius:var(--raio); box-shadow:var(--sombra);
+    overflow:hidden; display:flex; flex-direction:column;
+  }
+  .card .foto{
+    width:100%; aspect-ratio:1/1; object-fit:cover; background:linear-gradient(135deg,var(--azul-claro),var(--rosa));
+  }
+  .card .info{ padding:12px 12px 14px; display:flex; flex-direction:column; gap:4px; flex:1; }
+  .card .nome{ font-weight:700; font-size:14px; line-height:1.25; min-height:36px; }
+  .card .meta{ font-size:12px; color:var(--texto-suave); }
+  .card .preco{ font-family:'Baloo 2',sans-serif; font-weight:800; color:var(--dourado-2); font-size:18px; margin-top:2px; }
+  .card button.add{
+    margin-top:8px; border:none; border-radius:12px; padding:9px; font-family:'Baloo 2',sans-serif;
+    font-weight:700; font-size:14px; cursor:pointer; background:var(--azul); color:#fff; transition:.15s;
+  }
+  .card button.add.no-carrinho{ background:var(--rosa); color:#7a2a4a; }
+
+  .estado{ text-align:center; padding:60px 20px; color:var(--texto-suave); font-size:15px; }
+
+  /* ---------- Carrinho flutuante ---------- */
+  .botao-carrinho{
+    position:fixed; right:16px; bottom:16px; z-index:50;
+    background:var(--azul); color:#fff; border:none; border-radius:999px;
+    padding:14px 20px; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:15px;
+    box-shadow:0 8px 24px rgba(108,177,210,.5); cursor:pointer; display:flex; align-items:center; gap:8px;
+  }
+  .botao-carrinho .contador{
+    background:var(--rosa); color:#7a2a4a; border-radius:999px; min-width:22px; height:22px; padding:0 6px;
+    display:flex; align-items:center; justify-content:center; font-size:12px;
+  }
+
+  .painel-fundo{
+    position:fixed; inset:0; background:rgba(74,59,42,.4); z-index:60; display:none;
+  }
+  .painel-fundo.aberto{ display:block; }
+  .painel-carrinho{
+    position:fixed; right:0; top:0; bottom:0; width:min(380px,100%); background:var(--fundo); z-index:61;
+    transform:translateX(100%); transition:.25s; display:flex; flex-direction:column;
+  }
+  .painel-carrinho.aberto{ transform:translateX(0); }
+  .painel-carrinho .topo{ padding:18px; background:var(--amarelo); display:flex; justify-content:space-between; align-items:center; }
+  .painel-carrinho .topo h2{ margin:0; font-size:20px; color:#7a4a12; }
+  .painel-carrinho .fechar{ background:none; border:none; font-size:22px; cursor:pointer; color:#7a4a12; }
+  .itens-carrinho{ flex:1; overflow-y:auto; padding:14px 18px; }
+  .item-carrinho{ display:flex; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid #eee2ce; }
+  .item-carrinho img{ width:52px; height:52px; border-radius:10px; object-fit:cover; background:var(--azul-claro); }
+  .item-carrinho .txt{ flex:1; font-size:13px; }
+  .item-carrinho .txt strong{ display:block; font-size:13px; }
+  .item-carrinho .remover{ background:none; border:none; color:var(--texto-suave); font-size:18px; cursor:pointer; }
+  .rodape-carrinho{ padding:16px 18px; border-top:2px solid var(--amarelo); }
+  .rodape-carrinho .total{ display:flex; justify-content:space-between; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:18px; margin-bottom:12px; }
+  .btn-finalizar{
+    width:100%; border:none; border-radius:14px; padding:14px; background:#25D366; color:#fff;
+    font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-finalizar:disabled{ opacity:.5; cursor:not-allowed; }
+  .aviso-vazio{ text-align:center; color:var(--texto-suave); padding:40px 10px; font-size:14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="sol">☀️</span> Raio de Sol Baby Kids</div>
+  <div class="subtitulo">moda infantil com carinho — escolha, reserve e finalize no WhatsApp</div>
+</header>
+
+<div class="filtros">
+  <input type="text" id="busca" placeholder="Buscar por nome...">
+  <select id="filtroTamanho"><option value="">Tamanho</option></select>
+  <select id="filtroGenero"><option value="">Gênero</option></select>
+</div>
+<div class="chips" id="chipsCategoria"></div>
+
+<div id="grid" class="grid"></div>
+<div id="estado" class="estado" style="display:none;"></div>
+
+<button class="botao-carrinho" id="botaoCarrinho">
+  🛍️ Carrinho <span class="contador" id="contadorCarrinho">0</span>
+</button>
+
+<div class="painel-fundo" id="painelFundo"></div>
+<aside class="painel-carrinho" id="painelCarrinho">
+  <div class="topo">
+    <h2>Seu carrinho</h2>
+    <button class="fechar" id="fecharCarrinho">✕</button>
+  </div>
+  <div class="itens-carrinho" id="itensCarrinho"></div>
+  <div class="rodape-carrinho">
+    <div class="total"><span>Total</span><span id="totalCarrinho">R$ 0,00</span></div>
+    <button class="btn-finalizar" id="btnFinalizar">Finalizar no WhatsApp</button>
+  </div>
+</aside>
+
+<script>
+/* =========================================================================
+   CONFIGURACAO — troque estes 2 valores antes de publicar
+   ========================================================================= */
+const CONFIG = {
+  API_BASE: 'https://n8n.adaoserver.com.br/webhook',   // URL base do seu n8n + /webhook
+  WHATSAPP_NUMBER: '5599984696705',                     // numero da loja: DDI+DDD+numero, so digitos
+};
+
+let TODOS_PRODUTOS = [];
+let CARRINHO = [];
+
+const grid = document.getElementById('grid');
+const estadoEl = document.getElementById('estado');
+const buscaEl = document.getElementById('busca');
+const filtroTamanho = document.getElementById('filtroTamanho');
+const filtroGenero = document.getElementById('filtroGenero');
+const chipsCategoria = document.getElementById('chipsCategoria');
+
+function formatarPreco(v){
+  return v.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+}
+
+async function carregarProdutos(){
+  estadoEl.style.display = 'block';
+  estadoEl.textContent = 'Carregando novidades... ☀️';
+  grid.innerHTML = '';
+  try{
+    const resp = await fetch(`${CONFIG.API_BASE}/produtos-vitrine`);
+    if(!resp.ok) throw new Error('Falha ao buscar produtos');
+    const dados = await resp.json();
+    TODOS_PRODUTOS = dados.produtos || [];
+    montarFiltros();
+    renderizarProdutos();
+  }catch(e){
+    estadoEl.style.display = 'block';
+    estadoEl.textContent = 'Não conseguimos carregar os produtos agora. Tente novamente em instantes.';
+    console.error(e);
+  }
+}
+
+function montarFiltros(){
+  const tamanhos = [...new Set(TODOS_PRODUTOS.map(p => p.tamanho).filter(Boolean))];
+  const generos = [...new Set(TODOS_PRODUTOS.map(p => p.genero).filter(Boolean))];
+  const categorias = [...new Set(TODOS_PRODUTOS.map(p => p.categoria).filter(Boolean))];
+
+  filtroTamanho.innerHTML = '<option value="">Tamanho</option>' + tamanhos.map(t => `<option value="${t}">${t}</option>`).join('');
+  filtroGenero.innerHTML = '<option value="">Gênero</option>' + generos.map(g => `<option value="${g}">${g}</option>`).join('');
+
+  chipsCategoria.innerHTML = ['Todos', ...categorias].map(c =>
+    `<button class="chip ${c==='Todos' ? 'ativo':''}" data-cat="${c==='Todos'?'':c}">${c}</button>`
+  ).join('');
+  chipsCategoria.querySelectorAll('.chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      chipsCategoria.querySelectorAll('.chip').forEach(b => b.classList.remove('ativo'));
+      btn.classList.add('ativo');
+      renderizarProdutos();
+    });
+  });
+}
+
+function filtrosAtivos(){
+  const categoriaAtiva = chipsCategoria.querySelector('.chip.ativo');
+  return {
+    busca: buscaEl.value.trim().toLowerCase(),
+    tamanho: filtroTamanho.value,
+    genero: filtroGenero.value,
+    categoria: categoriaAtiva ? categoriaAtiva.dataset.cat : ''
+  };
+}
+
+function renderizarProdutos(){
+  const f = filtrosAtivos();
+  const lista = TODOS_PRODUTOS.filter(p => {
+    if(f.busca && !p.nome.toLowerCase().includes(f.busca)) return false;
+    if(f.tamanho && p.tamanho !== f.tamanho) return false;
+    if(f.genero && p.genero !== f.genero) return false;
+    if(f.categoria && p.categoria !== f.categoria) return false;
+    return true;
+  });
+
+  if(lista.length === 0){
+    grid.innerHTML = '';
+    estadoEl.style.display = 'block';
+    estadoEl.textContent = 'Nenhum produto encontrado com esse filtro.';
+    return;
+  }
+  estadoEl.style.display = 'none';
+
+  grid.innerHTML = lista.map(p => {
+    const noCarrinho = CARRINHO.some(i => i.id === p.id);
+    return `
+    <div class="card">
+      <img class="foto" src="${p.imagemUrl}" alt="${p.nome}" loading="lazy" onerror="this.style.background='linear-gradient(135deg,var(--azul-claro),var(--rosa))'; this.src='';">
+      <div class="info">
+        <div class="nome">${p.nome}</div>
+        <div class="meta">${p.tamanho || ''}${p.cor ? ' · ' + p.cor : ''}</div>
+        <div class="preco">${formatarPreco(p.preco)}</div>
+        <button class="add ${noCarrinho ? 'no-carrinho':''}" data-id="${p.id}">${noCarrinho ? 'Adicionado ✓' : 'Adicionar'}</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('button.add').forEach(btn => {
+    btn.addEventListener('click', () => alternarCarrinho(btn.dataset.id));
+  });
+}
+
+function alternarCarrinho(id){
+  const produto = TODOS_PRODUTOS.find(p => String(p.id) === String(id));
+  if(!produto) return;
+  const idx = CARRINHO.findIndex(i => i.id === produto.id);
+  if(idx >= 0){ CARRINHO.splice(idx,1); } else { CARRINHO.push(produto); }
+  atualizarCarrinhoUI();
+  renderizarProdutos();
+}
+
+function removerDoCarrinho(id){
+  CARRINHO = CARRINHO.filter(i => i.id !== id);
+  atualizarCarrinhoUI();
+  renderizarProdutos();
+}
+
+function atualizarCarrinhoUI(){
+  document.getElementById('contadorCarrinho').textContent = CARRINHO.length;
+  const total = CARRINHO.reduce((s,i) => s + (Number(i.preco)||0), 0);
+  document.getElementById('totalCarrinho').textContent = formatarPreco(total);
+
+  const itensEl = document.getElementById('itensCarrinho');
+  if(CARRINHO.length === 0){
+    itensEl.innerHTML = '<div class="aviso-vazio">Seu carrinho está vazio.<br>Toque em "Adicionar" nos produtos que você gostar 💛</div>';
+  } else {
+    itensEl.innerHTML = CARRINHO.map(i => `
+      <div class="item-carrinho">
+        <img src="${i.imagemUrl}" alt="${i.nome}">
+        <div class="txt"><strong>${i.nome}</strong>${i.tamanho||''}${i.cor?' · '+i.cor:''} — ${formatarPreco(i.preco)}</div>
+        <button class="remover" data-id="${i.id}" title="Remover">✕</button>
+      </div>`).join('');
+    itensEl.querySelectorAll('.remover').forEach(btn => btn.addEventListener('click', () => removerDoCarrinho(btn.dataset.id)));
+  }
+  document.getElementById('btnFinalizar').disabled = CARRINHO.length === 0;
+}
+
+// Painel do carrinho
+const painelCarrinho = document.getElementById('painelCarrinho');
+const painelFundo = document.getElementById('painelFundo');
+function abrirCarrinho(){ painelCarrinho.classList.add('aberto'); painelFundo.classList.add('aberto'); }
+function fecharCarrinho(){ painelCarrinho.classList.remove('aberto'); painelFundo.classList.remove('aberto'); }
+document.getElementById('botaoCarrinho').addEventListener('click', abrirCarrinho);
+document.getElementById('fecharCarrinho').addEventListener('click', fecharCarrinho);
+painelFundo.addEventListener('click', fecharCarrinho);
+
+// Finalizar no WhatsApp
+document.getElementById('btnFinalizar').addEventListener('click', async () => {
+  const btn = document.getElementById('btnFinalizar');
+  if(CARRINHO.length === 0) return;
+  btn.disabled = true;
+  btn.textContent = 'Preparando pedido...';
+  try{
+    const resp = await fetch(`${CONFIG.API_BASE}/carrinho-vitrine`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itens: CARRINHO.map(p => ({
+        id: p.id, codigo: p.codigo, nome: p.nome, tamanho: p.tamanho, cor: p.cor, preco: p.preco
+      })) })
+    });
+    if(!resp.ok) throw new Error('Falha ao criar pedido');
+    const dados = await resp.json();
+    const texto = `Olá! Quero finalizar meu pedido *#${dados.codigo}* (${dados.qtdItens} ${dados.qtdItens>1?'itens':'item'}, total estimado ${formatarPreco(dados.totalEstimado)})`;
+    const link = `https://wa.me/${CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(texto)}`;
+    window.location.href = link;
+  }catch(e){
+    alert('Não foi possível finalizar agora. Tente novamente em instantes.');
+    console.error(e);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Finalizar no WhatsApp';
+  }
+});
+
+buscaEl.addEventListener('input', renderizarProdutos);
+filtroTamanho.addEventListener('change', renderizarProdutos);
+filtroGenero.addEventListener('change', renderizarProdutos);
+
+atualizarCarrinhoUI();
+carregarProdutos();
+</script>
+</body>
+</html>
