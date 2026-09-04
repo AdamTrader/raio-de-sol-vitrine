@@ -136,6 +136,26 @@
   }
   .btn-finalizar:disabled{ opacity:.5; cursor:not-allowed; }
   .aviso-vazio{ text-align:center; color:var(--texto-suave); padding:40px 10px; font-size:14px; }
+
+  /* ---------- Lightbox (imagem ampliada) ---------- */
+  .card .foto{ cursor:zoom-in; }
+  .lightbox{
+    position:fixed; inset:0; background:rgba(20,15,8,.88); z-index:80;
+    display:none; align-items:center; justify-content:center; padding:24px;
+  }
+  .lightbox.aberto{ display:flex; }
+  .lightbox img{
+    max-width:min(90vw,720px); max-height:78vh; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.5);
+    background:var(--card);
+  }
+  .lightbox .fechar-lightbox{
+    position:absolute; top:18px; right:20px; background:rgba(255,255,255,.15); color:#fff; border:none;
+    border-radius:999px; width:42px; height:42px; font-size:22px; cursor:pointer; line-height:1;
+  }
+  .lightbox .legenda{
+    margin-top:14px; text-align:center; color:#fff; font-family:'Baloo 2',sans-serif; font-size:16px;
+  }
+  .lightbox .conteudo-lightbox{ display:flex; flex-direction:column; align-items:center; }
 </style>
 </head>
 <body>
@@ -171,6 +191,14 @@
     <button class="btn-finalizar" id="btnFinalizar">Finalizar no WhatsApp</button>
   </div>
 </aside>
+
+<div class="lightbox" id="lightbox">
+  <button class="fechar-lightbox" id="fecharLightbox">✕</button>
+  <div class="conteudo-lightbox">
+    <img id="lightboxImg" src="" alt="">
+    <div class="legenda" id="lightboxLegenda"></div>
+  </div>
+</div>
 
 <script>
 /* =========================================================================
@@ -265,7 +293,7 @@ function renderizarProdutos(){
     const noCarrinho = CARRINHO.some(i => i.id === p.id);
     return `
     <div class="card">
-      <img class="foto" src="${p.imagemUrl}" alt="${p.nome}" loading="lazy" onerror="this.style.background='linear-gradient(135deg,var(--azul-claro),var(--rosa))'; this.src='';">
+      <img class="foto" src="${p.imagemUrl}" alt="${p.nome}" loading="lazy" data-id="${p.id}" onerror="this.style.background='linear-gradient(135deg,var(--azul-claro),var(--rosa))'; this.src='';">
       <div class="info">
         <div class="nome">${p.nome}</div>
         <div class="meta">${p.tamanho || ''}${p.cor ? ' · ' + p.cor : ''}</div>
@@ -278,7 +306,31 @@ function renderizarProdutos(){
   grid.querySelectorAll('button.add').forEach(btn => {
     btn.addEventListener('click', () => alternarCarrinho(btn.dataset.id));
   });
+  grid.querySelectorAll('img.foto').forEach(img => {
+    img.addEventListener('click', () => abrirLightbox(img.dataset.id));
+  });
 }
+
+function abrirLightbox(id){
+  const produto = TODOS_PRODUTOS.find(p => String(p.id) === String(id));
+  if(!produto || !produto.imagemUrl) return;
+  document.getElementById('lightboxImg').src = produto.imagemUrl.replace('w1000', 'w1600');
+  document.getElementById('lightboxImg').alt = produto.nome;
+  document.getElementById('lightboxLegenda').textContent =
+    `${produto.nome}${produto.tamanho ? ' · ' + produto.tamanho : ''}${produto.cor ? ' · ' + produto.cor : ''}`;
+  document.getElementById('lightbox').classList.add('aberto');
+}
+
+function fecharLightbox(){
+  document.getElementById('lightbox').classList.remove('aberto');
+}
+document.getElementById('fecharLightbox').addEventListener('click', fecharLightbox);
+document.getElementById('lightbox').addEventListener('click', (e) => {
+  if(e.target.id === 'lightbox') fecharLightbox();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') fecharLightbox();
+});
 
 function alternarCarrinho(id){
   const produto = TODOS_PRODUTOS.find(p => String(p.id) === String(id));
