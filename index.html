@@ -825,7 +825,7 @@ function alternarCarrinho(id){
   renderizarNovidades();
 }
 function removerDoCarrinho(id){
-  CARRINHO = CARRINHO.filter(i => i.id !== id);
+  CARRINHO = CARRINHO.filter(i => String(i.id) !== String(id));
   atualizarCarrinhoUI();
   renderizarProdutos();
   renderizarNovidades();
